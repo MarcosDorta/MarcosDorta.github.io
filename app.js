@@ -1,7 +1,7 @@
 (function(){
   const $ = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
-  const wa = t => 'https://wa.me/5515997275264?text=' + encodeURIComponent(t);
+  const wa = t => 'https://wa.me/5515997275246?text=' + encodeURIComponent(t);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const mobile = matchMedia('(max-width:900px), (pointer:coarse)').matches;
 
