@@ -71,7 +71,8 @@
   .br.tr{right:0;top:0;border-width:1px 1px 0 0;animation:corner 4s var(--ease2) 1s infinite}
   .br.bl{left:0;bottom:0;border-width:0 0 1px 1px;animation:corner 4s var(--ease2) 3s infinite}
   .br.brr{right:0;bottom:0;border-width:0 1px 1px 0;animation:corner 4s var(--ease2) 2s infinite}
-  @keyframes corner{0%,70%,100%{width:16px;height:16px}85%{width:34px;height:34px}}
+  @keyframes corner{0%,70%,100%{transform:scale(1)}85%{transform:scale(2.1)}}
+  .br.tl{transform-origin:0 0}.br.tr{transform-origin:100% 0}.br.bl{transform-origin:0 100%}.br.brr{transform-origin:100% 100%}
   .prog{position:fixed;left:0;top:0;height:2px;width:100%;background:linear-gradient(90deg,var(--cob),var(--lime));transform-origin:0 50%;transform:scaleX(0);z-index:95}
   .corner{position:fixed;z-index:85;display:flex;align-items:center;gap:8px;font:500 .68rem var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
   .corner .dim{color:var(--dim)}
@@ -129,11 +130,12 @@
   /* ===== Modelo 3D: notebook (inspirado no Galaxy Book4) e celular S26 ===== */
   /* Sistema de cor: --acc muda por projeto (violeta / lima); metal prateado + vidro violeta contrastam com o preto do site */
   @property --acc{syntax:'<color>';inherits:true;initial-value:#7A4DFF}
-  .lap{--T:.55em;--Tb:.9em;--yr:-12;--pr:0;--open:0;--rx:-17;--sc:.9;--acc:#7A4DFF;--ang:calc(var(--yr) + var(--pr));position:relative;width:58em;height:52em;margin:0 auto;font-size:clamp(4.3px,1.34vw,5.2px);perspective:2900px;animation:float 6s ease-in-out infinite;transition:--acc .9s ease}
+  .lap{--T:.55em;--Tb:.9em;--yr:-12;--pr:0;--rx:-17;--sc:.9;--acc:#7A4DFF;--ang:calc(var(--yr) + var(--pr));position:relative;width:58em;height:52em;margin:0 auto;font-size:clamp(4.3px,1.34vw,5.2px);perspective:2900px;animation:float 6s ease-in-out infinite;transition:--acc .9s ease}
   @keyframes float{0%,100%{translate:0 0}50%{translate:0 -6px}}
   .lap.is-phone{--rx:-10;--sc:1.04}
   /* iluminação: halo de cor do projeto no chão + sombra de contato que acompanha a rotação */
-  .lap::before{content:"";position:absolute;left:2%;right:2%;bottom:-4%;height:26%;background:radial-gradient(closest-side,color-mix(in srgb,var(--acc) calc(25% + var(--open)*45%),transparent),transparent 92%);z-index:-1}
+  .lap::before{content:"";position:absolute;left:2%;right:2%;bottom:-4%;height:26%;background:radial-gradient(closest-side,color-mix(in srgb,var(--acc) 70%,transparent),transparent 92%);z-index:-1;opacity:.36;transition:opacity 1s ease}
+  .lap.open::before{opacity:1}
   .lap::after{content:"";position:absolute;left:12%;right:12%;bottom:5%;height:9%;background:radial-gradient(closest-side,rgba(0,0,0,.85),transparent);translate:calc(var(--ang)*-.12em) 0;z-index:-1;transition:left .6s,right .6s}
   .lap.is-phone::after{left:34%;right:34%}
   .lap.idle,.lap.idle *{animation-play-state:paused!important}
@@ -144,7 +146,8 @@
   .lap[data-lg=off] .lg{transform:translateZ(-16em) rotateY(-50deg) scale(.86);opacity:0;visibility:hidden;transition:transform .5s var(--ease),opacity .32s ease,visibility 0s .5s}
 
   /* tampa */
-  .lid{position:absolute;left:0;top:0;width:58em;height:36em;transform-origin:50% 100%;transform:rotateX(-88deg)}
+  .lid{position:absolute;left:0;top:0;width:58em;height:36em;transform-origin:50% 100%;transform:rotateX(-88deg);transition:transform .85s cubic-bezier(.45,0,.2,1)}
+  .lap.open .lid{transform:rotateX(7deg);transition:transform 1.2s cubic-bezier(.3,1.35,.5,1)}
   .lid-front,.lid-back{position:absolute;inset:0;border-radius:.9em;backface-visibility:hidden;-webkit-backface-visibility:hidden}
   .lid-front{transform:translateZ(calc(var(--T)/2));background:#030304;padding:.5em .5em .7em;box-shadow:inset 0 0 0 .14em #121316,0 0 0 .1em #7c8087,0 0 0 .16em rgba(255,255,255,.22)}
   .lid-back{transform:translateZ(calc(var(--T)/-2)) rotateY(180deg);display:grid;place-items:center;
@@ -158,7 +161,8 @@
   .lr{right:0;top:0;width:var(--T);height:100%;transform:translateX(calc(var(--T)/2)) rotateY(90deg);background:linear-gradient(90deg,#9a9ea4,#e0e2e6)}
   .lt2{left:0;top:0;width:100%;height:var(--T);transform:translateY(calc(var(--T)/-2)) rotateX(90deg);background:linear-gradient(180deg,#f2f3f5,#aeb2b8)}
   .cam{position:absolute;left:50%;top:.17em;width:.3em;height:.3em;margin-left:-.15em;border-radius:50%;background:radial-gradient(circle at 35% 35%,#3a4a7a,#07080c 70%);box-shadow:0 0 0 .07em #202227;z-index:3}
-  .scr{position:relative;width:100%;height:100%;border-radius:.4em;overflow:hidden;background:#020205;display:flex;flex-direction:column;opacity:calc(.35 + var(--open)*.65)}
+  .scr{position:relative;width:100%;height:100%;border-radius:.4em;overflow:hidden;background:#020205;display:flex;flex-direction:column;opacity:.35;transition:opacity .8s ease}
+  .lap.open .scr{opacity:1}
   .glare{position:absolute;inset:.5em;border-radius:.4em;pointer-events:none;z-index:4;background:linear-gradient(112deg,transparent 30%,rgba(255,255,255,.15) 46%,rgba(255,255,255,.03) 54%,transparent 62%) calc(50% + var(--ang)*1.6%) 0/260% 100% no-repeat}
   .chrome{display:flex;align-items:center;gap:.5em;padding:.5em .8em;border-bottom:1px solid #1c1c28;font:500 .68em var(--code);color:var(--dim);flex:none}
   .chrome i{width:.55em;height:.55em;border-radius:50%;background:#2a2a36}
@@ -182,9 +186,10 @@
 
   /* tampa do teclado (alumínio, teclas pretas retroiluminadas, trackpad de vidro) */
   .deck{position:absolute;inset:0;border-radius:.6em .6em 1.4em 1.4em;box-shadow:inset 0 .16em 0 rgba(255,255,255,.55),inset .16em 0 0 rgba(255,255,255,.3),inset -.16em 0 0 rgba(255,255,255,.2),inset 0 -.22em .8em rgba(0,0,0,.2);
-    background:radial-gradient(90% 70% at 50% 0%,color-mix(in srgb,var(--acc) calc(var(--open)*34%),transparent),transparent 72%),
-      linear-gradient(112deg,transparent 32%,rgba(255,255,255,.2) 47%,transparent 60%) calc(50% + var(--ang)*1.8%) 0/260% 100% no-repeat,
+    background:linear-gradient(112deg,transparent 32%,rgba(255,255,255,.2) 47%,transparent 60%) calc(50% + var(--ang)*1.8%) 0/260% 100% no-repeat,
       repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,rgba(0,0,0,.03) 1px 3px),linear-gradient(180deg,#b6babf 0,#9fa3a9 40%,#8a8e94 100%)}
+  .deck::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(90% 70% at 50% 0%,color-mix(in srgb,var(--acc) 34%,transparent),transparent 72%);opacity:0;transition:opacity 1s ease}
+  .lap.open .deck::before{opacity:1}
   .deck>*{position:absolute}
   .kbc{left:3.2em;top:2.2em;width:53.6em;height:19em;border-radius:.6em;transform:translateZ(.08em);box-shadow:0 0 0 .14em #6d7077,0 0 1.2em rgba(0,0,0,.35)}
   .trk{left:19em;top:23.6em;width:22em;height:10.2em;border-radius:.9em;background:linear-gradient(150deg,#868a90,#a9adb2 60%,#9a9ea4);box-shadow:inset 0 .1em .5em rgba(0,0,0,.3),0 0 0 .1em rgba(255,255,255,.35),0 .15em .5em rgba(0,0,0,.25);transform:translateZ(.06em)}
@@ -192,7 +197,8 @@
   .grl{top:3em;height:17em;width:1.2em;background:radial-gradient(circle,#26282c 38%,transparent 44%) 0 0/.6em .6em;opacity:.85}
   .grl.a{left:1.2em}.grl.b{right:1.2em}
   .pwr{right:2.2em;top:.8em;width:1.6em;height:.9em;border-radius:.3em;background:linear-gradient(#2a2c31,#0f1013);box-shadow:0 0 0 .08em rgba(255,255,255,.25)}
-  .led{left:2.4em;top:23.6em;width:.5em;height:.5em;border-radius:50%;background:var(--lime);box-shadow:0 0 .9em var(--lime);opacity:var(--open)}
+  .led{left:2.4em;top:23.6em;width:.5em;height:.5em;border-radius:50%;background:var(--lime);box-shadow:0 0 .9em var(--lime);opacity:0;transition:opacity .8s}
+  .lap.open .led{opacity:1}
   .notch{left:24em;bottom:.15em;width:12em;height:.8em;border-radius:0 0 1em 1em;background:linear-gradient(#6b6e74,#a2a6ac);box-shadow:inset 0 .12em .2em rgba(0,0,0,.35)}
 
   /* celular (estilo Galaxy S26: moldura reta de alumínio, vidro violeta, furo de câmera, três lentes) */
@@ -293,7 +299,8 @@
   .m-who b{display:block;font:700 1.15em var(--head)}.m-who span{font:500 .85em var(--soft);color:var(--lime)}
   .m-b{width:max-content;max-width:78%;padding:.8em 1.1em;margin:.9em 0 0;border-radius:1.3em 1.3em 1.3em .3em;background:#14141c;font:500 1em/1.35 var(--soft)}
   .m-b.r{margin-left:auto;background:var(--acc);color:var(--onacc);border-radius:1.3em 1.3em .3em 1.3em}
-  .m-b.t{display:flex;gap:.35em;padding:1em 1.2em}.m-b.t i{width:.6em;height:.6em;border-radius:50%;background:#777784;animation:pulse2 1.2s ease-in-out infinite alternate}
+  .m-b.t{display:flex;gap:.35em;padding:1em 1.2em}.m-b.t i{width:.6em;height:.6em;border-radius:50%;background:#777784;animation:dotp .7s ease-in-out infinite alternate}
+  .m-b.t i:nth-child(2){animation-delay:.15s}.m-b.t i:nth-child(3){animation-delay:.3s}
   .m-input{position:absolute;left:1.4em;right:1.4em;bottom:2.2em;height:3.1em;border-radius:1.6em;background:#101018;border:1px solid #20202c;display:flex;align-items:center;padding:0 .5em 0 1.3em;color:#777784;font:500 1em var(--soft);z-index:3}
   .m-input::after{content:"";margin-left:auto;width:2.2em;height:2.2em;border-radius:50%;background:var(--acc)}
   .m-tab{position:absolute;left:1.4em;right:1.4em;bottom:2.2em;height:3.2em;border-radius:1.6em;background:rgba(16,16,24,.94);border:1px solid #26262f;display:flex;justify-content:space-around;align-items:center;z-index:3;box-shadow:0 .5em 1em rgba(0,0,0,.5)}
@@ -334,7 +341,8 @@
   .pg .nd i{display:block;width:1.3em;height:1.3em;border-radius:.4em;background:var(--vio)}
   .pg .ln3{width:2.6em;height:2px;background:linear-gradient(90deg,var(--vio),var(--cob));position:relative;overflow:hidden}
   .pg .ln3::after{content:"";position:absolute;top:-1px;left:-30%;width:30%;height:4px;background:#fff;opacity:.8;animation:pulse2 1.6s linear infinite}
-  @keyframes pulse2{to{left:110%}}
+  @keyframes pulse2{to{transform:translateX(450%)}}
+  @keyframes dotp{from{opacity:.25}to{opacity:1}}
   .pg .chat{padding:1em 1.4em;display:grid;gap:.7em}
   .pg .bub{height:2em;border-radius:1em;border:1px solid #2a2a3a;width:62%}
   .pg .bub.r{margin-left:auto;background:var(--vio);border:0;width:48%}
@@ -525,6 +533,11 @@
     .hero{height:calc(100svh + 70vh)}
     .proc{height:calc(100svh + 220vh)}
     .dock-bg{backdrop-filter:none;-webkit-backdrop-filter:none;background:#070707}
+    .grain,.light::before{display:none}
+    .corner,.frame{mix-blend-mode:normal}
+    .foot .nm2{animation:none}
+    .lap{transition:none}
+    .mq-row{-webkit-text-stroke-width:.8px}
   }
   @media (prefers-reduced-motion:reduce){
     html{scroll-behavior:auto}

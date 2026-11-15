@@ -164,23 +164,12 @@
   if ('IntersectionObserver' in window) new IntersectionObserver(es => lap.classList.toggle('idle', !es[0].isIntersecting), {rootMargin:'120px'}).observe($('#pjlap'));   // pausa a flutuação fora da tela
 
   // Tampa: abre ao entrar em Projetos e fecha ao entrar em Tecnologias (com leve "mola" ao abrir)
-  const lidEl = $('#lid');
-  let leanCur = -88, leanRaf = 0, isOpen = false;
-  const eio = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
-  const eob = k => 1 + 1.6 * Math.pow(k - 1, 3) + .6 * Math.pow(k - 1, 2);
-  const setLean = v => { leanCur = v; lidEl.style.transform = 'rotateX(' + v.toFixed(2) + 'deg)'; lap.style.setProperty('--open', clamp((v + 88) / 95).toFixed(3)); };
-  setLean(-88);
-  function tweenLean(to, dur, back){
-    cancelAnimationFrame(leanRaf);
-    if (reduce){ setLean(to); return; }
-    const from = leanCur, t0 = performance.now();
-    (function step(now){ const k = clamp((now - t0) / dur); setLean(from + (to - from) * (back ? eob(k) : eio(k))); if (k < 1) leanRaf = requestAnimationFrame(step); })(t0);
-  }
+  let isOpen = false;
   function lapOpen(want){
     if (want === isOpen) return; isOpen = want;
-    lap.classList.toggle('phone-on', want);
-    if (want) tweenLean(7, 1200, true); else tweenLean(-88, 850, false);
+    lap.classList.toggle('phone-on', want); lap.classList.toggle('open', want);
   }
+
 
   // Alternador: o modelo atual gira para trás e some, o outro entra em seguida (sem desmontar)
   let mode = 'laptop';
@@ -221,13 +210,6 @@
     };
     pl.addEventListener('pointerup', end); pl.addEventListener('pointercancel', end);
     pl.addEventListener('pointerleave', () => { if (!drag && fine) lap.style.setProperty('--pr', '0'); else end(); });
-    if (matchMedia('(pointer:coarse)').matches && 'DeviceOrientationEvent' in window){
-      let gt = 0;
-      addEventListener('deviceorientation', e => {
-        if (drag || gt || mode !== 'phone' || e.gamma == null) return;
-        gt = requestAnimationFrame(() => { gt = 0; lap.style.setProperty('--pr', clamp(e.gamma / 3, -14, 14).toFixed(1)); });
-      }, {passive:true});
-    }
   }
 
   /* ---------- Medidas em cache ---------- */
@@ -449,12 +431,13 @@
   const sizeOcto = () => { ow = octo.offsetWidth || 64; };
   let oy = 90, prevY = scrollY, vel = 0, bubT = 0, bubI = 0, swapT = 0, frameB = false, lastTx = 0, run = null, hadBits = false;
   const ss = v => v * v * (3 - 2 * v);
+  let lastSk = '', lastTf = '';
   function octoFrame(t){
     requestAnimationFrame(octoFrame);
     if (document.hidden) return;
     const y = scrollY, max = Math.max(1, docH - vh), p = y / max;
     vel = vel * .88 + (y - prevY) * .12; prevY = y;
-    if (techVis) mqWrap.style.setProperty('--sk', clamp(vel * .14, -9, 9).toFixed(2));
+    if (techVis){ const sk = clamp(vel * .14, -9, 9).toFixed(1); if (sk !== lastSk){ lastSk = sk; mqWrap.style.setProperty('--sk', sk); } }
     const w = ow, ps = w / 16, hgt = ps * 14;
     let s = Math.abs(vel);
     const topY = 64, botY = vh - hgt - (small() ? 96 : 120);
@@ -478,7 +461,8 @@
       }
     }
     lastTx = tx;
-    octo.style.transform = 'translate3d(' + Math.round(tx / ps) * ps + 'px,' + Math.round(ty / ps) * ps + 'px,0)';
+    const tf = 'translate3d(' + Math.round(tx / ps) * ps + 'px,' + Math.round(ty / ps) * ps + 'px,0)';
+    if (tf !== lastTf){ lastTf = tf; octo.style.transform = tf; }
     if (t - swapT > 340 / (1 + clamp(s / 6) * 2.5)){
       swapT = t; frameB = !frameB; gA.style.display = frameB ? 'none' : ''; gB.style.display = frameB ? '' : 'none';
     }
