@@ -53,28 +53,80 @@
     });
   });
 
-  /* ---------- Notebook 3D: teclado e telas dos sites ---------- */
-  const keys = $('#keys');
+  /* ---------- Modelo 3D: notebook (estilo Galaxy Book4) e celular (estilo S26) ---------- */
+  const lap = $('#lap'), scene = $('#scene');
+  const LAPTOP = `<div class="lg"><div class="lid" id="lid"><div class="lid-back" id="lback"></div><div class="le"></div><div class="lr"></div><div class="lt2"></div><div class="lid-front"><i class="cam"></i><div class="scr"><div class="chrome"><i></i><i></i><i></i><span id="url">seusite.com.br</span></div><div class="pages" id="pages"></div></div><div class="glare"></div></div></div><div class="base"><div class="floor"></div><div class="bf"></div><div class="bl"><i class="port"></i><i class="port"></i><i class="port"></i></div><div class="br2"><i class="port"></i></div><div class="deck"><i class="hinge"></i><i class="grl a"></i><i class="grl b"></i><canvas class="kbc" id="kbc" width="1286" height="456"></canvas><div class="trk"></div><i class="pwr"></i><i class="led"></i><i class="notch"></i></div></div></div>`;
+  const SLICES = [-1, -.75, -.5, -.25, 0, .25, .5, .75, 1].map(k => `<i class="sl${Math.abs(k) === 1 ? ' e' : ''}" style="transform:translateZ(${k}em)"></i>`).join('');
+  const PHONE_HTML = `<div class="ph" id="ph">${SLICES}<i class="pbtn b1"></i><i class="pbtn b2"></i><div class="pback" id="pback"><i class="lens l1"></i><i class="lens l2"></i><i class="lens l3"></i><i class="flash"></i></div><div class="pfront"><div class="pscr"><i class="hole"></i><div class="sbar"><span>9:41</span><span class="ic"><i class="sg"></i><i class="bt"></i></span></div><div class="mpages" id="mpages"></div><i class="home"></i><div class="pglare"></div></div></div></div>`;
+  scene.innerHTML = LAPTOP + PHONE_HTML;                                      // marcação fixa do próprio código
   const rep = (n, v) => Array(n).fill(v);
-  [rep(15, 2), [3, ...rep(12, 2), 3], [3, ...rep(11, 2), 5], [4, ...rep(10, 2), 6], [3, 3, 3, 12, 3, 3, 3]].forEach(r => r.forEach(sp => {
-    const k = document.createElement('i'); k.style.gridColumn = 'span ' + sp; keys.append(k);
-  }));
+  const keyRows = [rep(15, 2), [3, ...rep(12, 2), 3], [3, ...rep(11, 2), 5], [4, ...rep(10, 2), 6], [3, 3, 3, 12, 3, 3, 3]];
+  const keyTxt = [
+    ['esc', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12', 'ins', 'del'],
+    ['tab', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\'],
+    ['caps', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'", 'enter'],
+    ['shift', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 'shift'],
+    ['ctrl', 'fn', 'alt', '', 'alt', 'ctrl', '<>']
+  ];
+  const numTxt = ['num', '/', '*', '-', '7', '8', '9', '+', '4', '5', '6', '=', '1', '2', '3', 'ent', '0', '0', '.', ','];
+  // Teclado e teclado numérico desenhados em um canvas só: teclas de curva suave, legendas e luz de fundo
+  function drawKeyboard(cv){
+    const c = cv.getContext('2d'), ppe = cv.width / 53.6;
+    c.setTransform(ppe, 0, 0, ppe, 0, 0); c.clearRect(0, 0, 54, 20);
+    const rr = (x, y, w, h, r) => { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); };
+    const bg = c.createLinearGradient(0, 0, 0, 19); bg.addColorStop(0, '#0b0c0f'); bg.addColorStop(1, '#050607');
+    c.fillStyle = bg; rr(0, 0, 53.6, 19, .6); c.fill();
+    const glow = c.createRadialGradient(26, 9, 1, 26, 9, 30); glow.addColorStop(0, 'rgba(210,225,255,.10)'); glow.addColorStop(1, 'rgba(210,225,255,0)');
+    c.fillStyle = glow; rr(0, 0, 53.6, 19, .6); c.fill();
+    const key = (x, y, w, h, t) => {
+      const g = c.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#2b2e34'); g.addColorStop(.55, '#1a1c20'); g.addColorStop(1, '#0e0f12');
+      c.fillStyle = g; rr(x, y, w, h, .32); c.fill();
+      c.strokeStyle = 'rgba(255,255,255,.07)'; c.lineWidth = .07; c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.09)'; c.fillRect(x + .35, y + .07, w - .7, .09);
+      if (!t) return;
+      c.save(); c.shadowColor = 'rgba(190,210,255,.9)'; c.shadowBlur = .55;
+      c.fillStyle = 'rgba(236,241,255,.92)'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = '700 ' + (t.length > 2 ? .62 : t.length === 2 ? .78 : 1.05) + 'px Quicksand,system-ui,sans-serif';
+      c.fillText(t, x + w / 2, y + h / 2 + .04); c.restore();
+    };
+    const gp = .3, colW = (40.8 - 29 * gp) / 30, rowH = (17.6 - 4 * gp) / 5, nW = (9.9 - 3 * gp) / 4;
+    keyRows.forEach((r, ri) => { let col = 0; r.forEach((sp, k) => { key(.7 + col * (colW + gp), .7 + ri * (rowH + gp), sp * colW + (sp - 1) * gp, rowH, keyTxt[ri][k]); col += sp; }); });
+    for (let r = 0; r < 5; r++) for (let q = 0; q < 4; q++) key(43 + q * (nW + gp), .7 + r * (rowH + gp), nW, rowH, numTxt[r * 4 + q]);
+  }
+  const kbc = $('#kbc'); drawKeyboard(kbc);
+  if (document.fonts && document.fonts.load) document.fonts.load('700 12px Quicksand').then(() => drawKeyboard(kbc)).catch(() => {});
+
   const card = `<div class="cardm"><i class="im"></i><i class="p"></i><i class="p" style="width:60%"></i></div>`;
   const prod = `<div class="cardm"><i class="im"></i><i class="p" style="width:70%"></i><i class="pr"></i></div>`;
   const nav = `<div class="nav"><i class="lgo"></i><i class="nl"></i><i class="nl"></i><i class="nl sp"></i></div>`;
-  const hero = `<div class="hero2"><i class="p" style="width:22%;background:#2b2160"></i><i class="h1" style="width:80%"></i><i class="h1" style="width:58%"></i><i class="p" style="width:72%"></i><i class="p" style="width:50%"></i><i class="cta"></i></div>`;
+  const mnav = `<div class="nav"><i class="lgo"></i><i class="nl sp" style="width:1.6em"></i></div>`;
+  const hero = `<div class="hero2"><i class="p" style="width:22%;background:#2c1a7a"></i><i class="h1" style="width:80%"></i><i class="h1" style="width:58%"></i><i class="p" style="width:72%"></i><i class="p" style="width:50%"></i><i class="cta"></i></div>`;
   const split = `<div class="split"><div><i class="h1" style="width:90%"></i><i class="h1" style="width:60%"></i><i class="p"></i><i class="p" style="width:70%"></i><i class="cta"></i></div><i class="big"></i></div>`;
   const bars = [46, 70, 38, 82, 58, 92, 64, 76].map(v => `<i style="--h:${v}%"></i>`).join('');
   const row = `<div class="tr"><i></i><i></i><i></i></div>`;
+  const kpi = `<div class="kpi"><i></i><b></b></div>`;
   const node = `<div class="nd"><i></i></div>`, link = `<i class="ln3"></i>`;
+  const tab = `<div class="tab"><i></i><i></i><i></i></div>`;
   const MOCK = {
     lp:   `<div class="pg-in">${nav}${hero}<div class="grid3">${card}${card}${card}</div><div class="hero2"><i class="h1" style="width:46%"></i><i class="p" style="width:70%"></i></div></div>`,
     site: `<div class="pg-in">${nav}${split}<div class="grid3">${card}${card}${card}</div>${split}</div>`,
     loja: `<div class="pg-in">${nav}<div class="hero2"><i class="big" style="aspect-ratio:3.2"></i></div><div class="grid3">${prod}${prod}${prod}</div><div class="grid3">${prod}${prod}${prod}</div></div>`,
-    sys:  `<div class="dash"><div class="side"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="main"><div class="kpis"><div class="kpi"><i></i><b></b></div><div class="kpi"><i></i><b></b></div><div class="kpi"><i></i><b></b></div></div><div class="bars">${bars}</div>${row}${row}${row}${row}</div></div>`,
+    sys:  `<div class="dash"><div class="side"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="main"><div class="kpis">${kpi}${kpi}${kpi}</div><div class="bars">${bars}</div>${row}${row}${row}${row}</div></div>`,
     bot:  `<div class="pg-in"><div class="flow">${node}${link}${node}${link}${node}</div><div class="chat"><div class="bub"></div><div class="bub r"></div><div class="bub"></div><div class="bub r"></div><div class="bub" style="width:40%"></div></div></div>`
   };
-  const pagesEl = $('#pages'), lap = $('#lap'), urlEl = $('#url'), lcap = $('#lcap'), lprice = $('#lprice');
+  const mt = n => `<div class="m-top"><i class="m-logo"></i><b>${n}</b><i class="m-burger"></i></div>`;
+  const mtab = `<div class="m-tab"><i></i><i></i><i></i><i></i></div>`;
+  const mrow = (t, d, p) => `<div class="m-row"><i class="m-ico"></i><div><b>${t}</b><span>${d}</span></div>${p ? `<u>${p}</u>` : ''}</div>`;
+  const mprod = (n, p) => `<div class="m-prod"><i class="m-pi"></i><b>${n}</b><u>${p}</u></div>`;
+  const mbars = [46, 70, 38, 82, 58, 92, 64].map(v => `<i style="--h:${v}%"></i>`).join('');
+  const MOB = {
+    lp:   `${mt('Studio')}<div class="pg-in m-body"><span class="m-chip">Novo · 2026</span><h1 class="m-h1">Venda mais com uma <em>página</em> que converte</h1><p class="m-p">Rápida, bonita e feita para o celular do seu cliente.</p><span class="m-btn">Quero um orçamento</span><div class="m-img"></div><div class="m-stats"><div class="m-stat"><b>98</b><span>Lighthouse</span></div><div class="m-stat"><b>1,2s</b><span>Carrega</span></div><div class="m-stat"><b>3x</b><span>Contatos</span></div></div></div>${mtab}`,
+    site: `${mt('Empresa')}<div class="pg-in m-body"><span class="m-chip">Institucional</span><h1 class="m-h1">Sua empresa com <em>presença</em> profissional</h1><div class="m-img"></div><h2 class="m-sec">Serviços</h2>${mrow('Consultoria', 'Planejamento sob medida')}${mrow('Projetos', 'Do briefing à entrega')}${mrow('Suporte', 'Atendimento dedicado')}<div class="m-quote">“Atendimento rápido e um site que passa confiança.”<b>Cliente satisfeito</b></div></div>${mtab}`,
+    loja: `${mt('Loja')}<div class="m-search">Buscar produtos</div><div class="m-chips"><i>Tudo</i><i>Novos</i><i>Ofertas</i><i>Kits</i></div><div class="pg-in m-grid">${mprod('Camiseta', 'R$ 89')}${mprod('Tênis', 'R$ 259')}${mprod('Mochila', 'R$ 149')}${mprod('Boné', 'R$ 59')}${mprod('Relógio', 'R$ 329')}${mprod('Fone', 'R$ 199')}</div>${mtab}`,
+    sys:  `${mt('Painel')}<div class="pg-in m-body"><div class="m-kpis"><div class="m-kpi"><span>Receita</span><b>R$ 12,4k</b><i>+18%</i></div><div class="m-kpi"><span>Pedidos</span><b>248</b><i>+9%</i></div></div><div class="m-chart">${mbars}</div><h2 class="m-sec">Recentes</h2>${mrow('Pedido #1042', 'Pago', 'R$ 320')}${mrow('Pedido #1041', 'Enviado', 'R$ 189')}${mrow('Pedido #1040', 'Pendente', 'R$ 94')}</div>${mtab}`,
+    bot:  `<div class="m-who"><i></i><div><b>Atendimento</b><span>online agora</span></div></div><div class="pg-in m-chat"><div class="m-b">Olá! Quer um orçamento? 👋</div><div class="m-b r">Quero uma loja virtual</div><div class="m-b">Perfeito! Qual o seu segmento?</div><div class="m-b r">Moda feminina</div><div class="m-b">Anotado. Já envio uma proposta.</div><div class="m-b t"><i></i><i></i><i></i></div></div><div class="m-input">Mensagem</div>`
+  };
+  const pagesEl = $('#pages'), mpagesEl = $('#mpages'), urlEl = $('#url'), lcap = $('#lcap'), lprice = $('#lprice');
   const cards = $$('.pc');
   if (!reduce && 'IntersectionObserver' in window){
     const brl = n => 'R$ ' + n.toLocaleString('pt-BR');
@@ -85,29 +137,97 @@
     }), {threshold:.6});
     cards.forEach(c => cio.observe(c));
   }
-  const pgs = cards.map(c => { const p = el('div', 'pg'); p.innerHTML = MOCK[c.dataset.v]; pagesEl.append(p); return p; });   // conteúdo fixo do próprio código
+  // As telas só entram no layout quando estão em uso (as demais ficam fora, sem custo de estilo ou layout)
+  const pgs = [], mpgs = [];
   const YAW = [-14, 12, -10, 14, -12];
-  let curCard = -1;
+  const ACC = ['#7A4DFF', '#C6F432', '#A98BFF', '#C6F432', '#7A4DFF'], ONA = ['#fff', '#070707', '#070707', '#070707', '#fff'];
+  let curCard = -1, busy = false;
+  lap.dataset.lg = 'asm'; lap.dataset.ph = 'off';
+  function showIn(list, host, src, cls, i, vis){
+    list.forEach((p, k) => { if (p && k !== i && p.classList.contains('on')){ p.classList.remove('on'); clearTimeout(p._h); p._h = setTimeout(() => { if (!p.classList.contains('on')) p.style.display = 'none'; }, 700); } });
+    if (!vis) return;
+    if (!list[i]){ const p = el('div', cls); p.innerHTML = src[cards[i].dataset.v]; host.append(p); list[i] = p; }   // conteúdo fixo do próprio código
+    const p = list[i]; clearTimeout(p._h); p.style.display = 'block';
+    requestAnimationFrame(() => requestAnimationFrame(() => p.classList.add('on')));
+  }
+  const renderPages = () => { showIn(pgs, pagesEl, MOCK, 'pg', curCard, lap.dataset.lg !== 'off'); showIn(mpgs, mpagesEl, MOB, 'pg mpg', curCard, lap.dataset.ph !== 'off'); };
   function setCard(i){
     if (i === curCard) return; curCard = i;
-    pgs.forEach((p, k) => p.classList.toggle('on', k === i));
     cards.forEach((c, k) => c.classList.toggle('act', k === i));
     const c = cards[i];
     urlEl.textContent = c.dataset.url; lcap.textContent = c.dataset.name; lprice.textContent = c.dataset.price;
-    lap.style.setProperty('--ry', YAW[i] + 'deg');
+    lap.style.setProperty('--acc', ACC[i]); lap.style.setProperty('--onacc', ONA[i]);
+    if (!busy) lap.style.setProperty('--yr', YAW[i]);
+    renderPages();
   }
   setCard(0);
+  if ('IntersectionObserver' in window) new IntersectionObserver(es => lap.classList.toggle('idle', !es[0].isIntersecting), {rootMargin:'120px'}).observe($('#pjlap'));   // pausa a flutuação fora da tela
+
+  // Tampa: abre ao entrar em Projetos e fecha ao entrar em Tecnologias (com leve "mola" ao abrir)
+  const lidEl = $('#lid');
+  let leanCur = -88, leanRaf = 0, isOpen = false;
+  const eio = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+  const eob = k => 1 + 1.6 * Math.pow(k - 1, 3) + .6 * Math.pow(k - 1, 2);
+  const setLean = v => { leanCur = v; lidEl.style.transform = 'rotateX(' + v.toFixed(2) + 'deg)'; lap.style.setProperty('--open', clamp((v + 88) / 95).toFixed(3)); };
+  setLean(-88);
+  function tweenLean(to, dur, back){
+    cancelAnimationFrame(leanRaf);
+    if (reduce){ setLean(to); return; }
+    const from = leanCur, t0 = performance.now();
+    (function step(now){ const k = clamp((now - t0) / dur); setLean(from + (to - from) * (back ? eob(k) : eio(k))); if (k < 1) leanRaf = requestAnimationFrame(step); })(t0);
+  }
+  function lapOpen(want){
+    if (want === isOpen) return; isOpen = want;
+    lap.classList.toggle('phone-on', want);
+    if (want) tweenLean(7, 1200, true); else tweenLean(-88, 850, false);
+  }
+
+  // Alternador: o modelo atual gira para trás e some, o outro entra em seguida (sem desmontar)
+  let mode = 'laptop';
+  const bL = $('#modeL'), bP = $('#modeP');
+  function setMode(to){
+    if (busy || to === mode) return;
+    busy = true; bL.disabled = bP.disabled = true;
+    const done = () => {
+      mode = to; busy = false; bL.disabled = bP.disabled = false;
+      bL.setAttribute('aria-pressed', String(to === 'laptop')); bP.setAttribute('aria-pressed', String(to === 'phone'));
+      lap.style.setProperty('--yr', YAW[Math.max(0, curCard)]);
+    };
+    lap.classList.toggle('is-phone', to === 'phone');
+    lap.style.setProperty('--pr', '0'); dpx = 0;
+    const A = to === 'phone' ? 'lg' : 'ph', B = to === 'phone' ? 'ph' : 'lg';
+    if (reduce){ lap.dataset[A] = 'off'; lap.dataset[B] = 'asm'; renderPages(); done(); return; }
+    lap.dataset[A] = 'off';
+    setTimeout(() => { lap.dataset[B] = 'asm'; renderPages(); }, 260);
+    setTimeout(done, 900);
+  }
+  bL.addEventListener('click', () => setMode('laptop'));
+  bP.addEventListener('click', () => setMode('phone'));
+
+  let dpx = 0;
   if (!reduce){
     const pl = $('#pjlap'), fine = matchMedia('(pointer:fine)').matches;
-    let drag = null, dpx = 0;
-    pl.addEventListener('pointerdown', e => { drag = {x: e.clientX, b: dpx}; lap.classList.add('dragging'); });
+    let drag = null, back = 0;
+    const lim = () => mode === 'phone' ? 180 : 50;
+    pl.addEventListener('pointerdown', e => { if (e.target.closest('.seg')) return; clearTimeout(back); drag = {x: e.clientX, b: dpx}; lap.classList.add('dragging'); });
     pl.addEventListener('pointermove', e => {
-      if (drag){ dpx = clamp(drag.b + (e.clientX - drag.x) * .4, -50, 50); lap.style.setProperty('--px', dpx.toFixed(1) + 'deg'); }
-      else if (fine){ const r = pl.getBoundingClientRect(); lap.style.setProperty('--px', (((e.clientX - r.left) / r.width - .5) * 16).toFixed(1) + 'deg'); }
+      if (drag){ dpx = clamp(drag.b + (e.clientX - drag.x) * (mode === 'phone' ? .6 : .4), -lim(), lim()); lap.style.setProperty('--pr', dpx.toFixed(1)); }
+      else if (fine){ const r = pl.getBoundingClientRect(); lap.style.setProperty('--pr', (((e.clientX - r.left) / r.width - .5) * (mode === 'phone' ? 26 : 16)).toFixed(1)); }
     });
-    const end = () => { if (drag){ drag = null; dpx = 0; lap.classList.remove('dragging'); lap.style.setProperty('--px', '0deg'); } };
+    const end = () => {
+      if (!drag) return; drag = null; lap.classList.remove('dragging');
+      const reset = () => { dpx = 0; lap.style.setProperty('--pr', '0'); };
+      if (mode === 'phone') back = setTimeout(reset, 4000); else reset();   // o celular fica virado um tempo para ver a traseira
+    };
     pl.addEventListener('pointerup', end); pl.addEventListener('pointercancel', end);
-    pl.addEventListener('pointerleave', () => { end(); if (fine) lap.style.setProperty('--px', '0deg'); });
+    pl.addEventListener('pointerleave', () => { if (!drag && fine) lap.style.setProperty('--pr', '0'); else end(); });
+    if (matchMedia('(pointer:coarse)').matches && 'DeviceOrientationEvent' in window){
+      let gt = 0;
+      addEventListener('deviceorientation', e => {
+        if (drag || gt || mode !== 'phone' || e.gamma == null) return;
+        gt = requestAnimationFrame(() => { gt = 0; lap.style.setProperty('--pr', clamp(e.gamma / 3, -14, 14).toFixed(1)); });
+      }, {passive:true});
+    }
   }
 
   /* ---------- Medidas em cache ---------- */
@@ -128,6 +248,8 @@
     M.ghost = ghosts.map(e => ({e, c: abs(e) + e.offsetHeight / 2}));
     M.mq = mqs.map(r => ({r, w: r.scrollWidth / 2}));
     M.tech = {t: abs($('#tecnologias')), h: $('#tecnologias').offsetHeight};
+    M.cards = cards.map(c => abs(c));
+    M.sobre = {t: abs($('#sobre')), h: $('#sobre').offsetHeight};
   }
 
   /* ---------- Revelar ao entrar na tela ---------- */
@@ -154,27 +276,32 @@
   tilts.forEach(t => tio && tio.observe(t));
   const ease = v => 1 - Math.pow(1 - v, 3);
 
+  const lastGx = [];
   function update(){
     ticking = false;
     const y = scrollY, max = Math.max(1, docH - vh);
+    // 1) leituras (antes de qualquer escrita, para não forçar recálculo de layout)
+    const projVis = y + vh > M.proj && y < M.tech.t;
+    const lapBottom = projVis && small() ? pjlap.getBoundingClientRect().bottom : 0;
+    const sobreVis = y + vh > M.sobre.t && y < M.sobre.t + M.sobre.h;
+    const pr = sobreVis && photo ? photo.getBoundingClientRect() : null;
+    const tr = []; tiltVis.forEach(t => { const r = t.getBoundingClientRect(); tr.push([t, ((r.top + r.height / 2) - vh / 2) / vh * -7]); });
+    // 2) escritas
     prog.style.transform = 'scaleX(' + (y / max).toFixed(4) + ')';
     const p3 = Math.round(clamp(y / max) * 100);
     if (p3 !== lastPct){ lastPct = p3; pct.textContent = String(p3).padStart(3, '0'); }
+    if (y < M.hero.t + M.hero.h + vh) heroEl.style.setProperty('--p', clamp((y - M.hero.t) / Math.max(1, M.hero.h - vh)).toFixed(4));
+    M.ghost.forEach((g, i) => { const v = (g.c - (y + vh / 2)) * .16; if (Math.abs(v - (lastGx[i] || 0)) > .5 && Math.abs(g.c - y - vh / 2) < vh * 1.6){ lastGx[i] = v; g.e.style.setProperty('--gx', v.toFixed(1)); } });
+    if (pr) photo.style.setProperty('--py', ((pr.top + pr.height / 2 - vh / 2) * -.06).toFixed(1));
 
-    heroEl.style.setProperty('--p', clamp((y - M.hero.t) / Math.max(1, M.hero.h - vh)).toFixed(4));
-    M.ghost.forEach(g => { g.e.style.setProperty('--gx', ((g.c - (y + vh / 2)) * .16).toFixed(1)); });
-
-    if (photo){ const r = photo.getBoundingClientRect(); photo.style.setProperty('--py', ((r.top + r.height / 2 - vh / 2) * -.06).toFixed(1)); }
-
-    // Notebook: abre conforme a seção entra; o site mostrado acompanha o cartão em foco
-    const op = reduce ? 1 : clamp((y + vh * .9 - (M.proj + 240)) / (vh * .55));
-    lap.style.setProperty('--lean', (-88 + 95 * ease(op)).toFixed(1) + 'deg');
-    lap.style.setProperty('--open', op.toFixed(2));
-    const line = small() ? pjlap.getBoundingClientRect().bottom + 40 : vh * .5;
-    let ai = 0; cards.forEach((c, k) => { if (c.getBoundingClientRect().top <= line) ai = k; });
-    setCard(ai);
-
-    tiltVis.forEach(t => { const r = t.getBoundingClientRect(); t.style.setProperty('--ty', (((r.top + r.height / 2) - vh / 2) / vh * -7).toFixed(2)); });
+    // Notebook: abre ao entrar em Projetos e fecha ao entrar em Tecnologias
+    lapOpen(reduce || (y + vh * .8 > M.proj + 240 && y < M.tech.t - vh * .45));
+    if (projVis){
+      const line = small() ? lapBottom + 40 : vh * .5;
+      let ai = 0; M.cards.forEach((t, k) => { if (t - y <= line) ai = k; });
+      setCard(ai);
+    }
+    tr.forEach(([t, v]) => t.style.setProperty('--ty', v.toFixed(2)));
 
     techVis = y + vh > M.tech.t && y < M.tech.t + M.tech.h;
     if (techVis){
@@ -184,15 +311,18 @@
       });
     }
 
-    const pp = clamp((y - M.proc.t) / Math.max(1, M.proc.h - vh));
-    const idx = Math.min(3, Math.floor(pp * 4));
-    segs.forEach((s, k) => s.style.setProperty('--f', clamp(pp * 4 - k).toFixed(3)));
-    if (idx !== lastIdx){
-      lastIdx = idx;
-      steps.forEach((s, k) => { s.classList.toggle('act', k === idx); s.classList.toggle('done', k < idx); });
-      caps.forEach((c, k) => c.classList.toggle('act', k === idx));
-      big.textContent = '0' + (idx + 1);
-      big.classList.remove('flip'); void big.offsetWidth; big.classList.add('flip');
+    const inProc = y + vh > M.proc.t && y < M.proc.t + M.proc.h;
+    if (inProc){
+      const pp = clamp((y - M.proc.t) / Math.max(1, M.proc.h - vh));
+      const idx = Math.min(3, Math.floor(pp * 4));
+      segs.forEach((sg, k) => sg.style.setProperty('--f', clamp(pp * 4 - k).toFixed(3)));
+      if (idx !== lastIdx){
+        lastIdx = idx;
+        steps.forEach((st, k) => { st.classList.toggle('act', k === idx); st.classList.toggle('done', k < idx); });
+        caps.forEach((cp, k) => cp.classList.toggle('act', k === idx));
+        big.textContent = '0' + (idx + 1);
+        big.classList.remove('flip'); void big.offsetWidth; big.classList.add('flip');
+      }
     }
 
     const lim = y + vh * .5; let cur = 0;
@@ -200,7 +330,7 @@
     if (cur !== lastSec){
       lastSec = cur;
       secName.textContent = navNames[navIds[cur]];
-      slots.forEach(s => s.classList.toggle('act', s.dataset.sec === navIds[cur]));
+      slots.forEach(sl => sl.classList.toggle('act', sl.dataset.sec === navIds[cur]));
     }
   }
   const onScroll = () => { if (!ticking){ ticking = true; requestAnimationFrame(update); } };
@@ -208,7 +338,7 @@
   /* ---------- Dock com ampliação (mola) ---------- */
   const dock = $('#dock'), dockBg = $('#dockbg'), dSlots = $$('.slot', dock);
   let base = 42, maxS = 1.4, dist = 96, gap = 8, lc = [], px = Infinity, W = 0, dockRun = false, hotI = -1, waving = false, userDock = false;
-  const sc = dSlots.map(() => 1), vs = dSlots.map(() => 0);
+  const sc = dSlots.map(() => 1), vs = dSlots.map(() => 0), dis = dSlots.map(sl => $('.di', sl));
   function dockMetrics(){
     const s = small();
     base = s ? 42 : 50; maxS = s ? 1.38 : 1.7; dist = s ? 96 : 150; gap = s ? 8 : 12;
@@ -235,7 +365,7 @@
     dSlots.forEach((sl, i) => {
       const grow = (sc[i] - 1) * base;
       sl.style.transform = 'translate3d(' + (acc + grow / 2 - extra / 2).toFixed(2) + 'px,0,0)';
-      $('.di', sl).style.transform = 'scale(' + sc[i].toFixed(3) + ')';
+      dis[i].style.transform = 'scale(' + sc[i].toFixed(3) + ')';
       sl.style.setProperty('--up', grow.toFixed(1));
       acc += grow;
     });
@@ -265,7 +395,7 @@
         px = a + (b - a) * k; dockGo();
         if (k < 1) requestAnimationFrame(step); else { px = Infinity; dockGo(); waving = false; }
       })(t0);
-    }, 7000);
+    }, 12000);
   }
 
   /* ---------- Polvo em pixel art (clicável: dá uma volta na tela deixando um rastro binário) ---------- */
@@ -291,7 +421,7 @@
   const gA = sprite(TA, 10, osvg), gB = sprite(TB, 10, osvg);
   gB.style.display = 'none';
   // O mesmo polvo, em pixels, estampado na tampa do notebook
-  const lb = $('#lback'); if (lb){ const sv = document.createElementNS(NS, 'svg'); sv.setAttribute('viewBox', '0 0 16 14'); sprite(HEAD, 0, sv); sprite(TA, 10, sv); lb.append(sv); }
+  const lb = $('#lback'); if (lb){ const sv = document.createElementNS(NS, 'svg'); sv.setAttribute('viewBox', '0 0 16 14'); sprite(HEAD, 0, sv); sprite(TA, 10, sv); sv.querySelectorAll('rect').forEach(r => r.setAttribute('fill', '#555a61')); lb.append(sv); const pb = $('#pback'); if (pb){ const s2 = sv.cloneNode(true); s2.querySelectorAll('rect').forEach(r => r.setAttribute('fill', '#cdbdff')); pb.append(s2); } }
   const bubs = ['#b0', '#b1', '#b2'].map(s => $(s));
 
   // Rastro de zeros e uns em pixel (canvas), sem significado algum
@@ -315,14 +445,17 @@
   }
   const spawn = (x, y, now) => bits.push({x: x - 4, y: y - 7, v: Math.random() < .5 ? 0 : 1, s: small() ? 2.5 : 3, t: now, life: 900 + Math.random() * 500, c: Math.random() < .2 ? '#F5F2EA' : '#C6F432'});
 
+  let ow = 64;
+  const sizeOcto = () => { ow = octo.offsetWidth || 64; };
   let oy = 90, prevY = scrollY, vel = 0, bubT = 0, bubI = 0, swapT = 0, frameB = false, lastTx = 0, run = null, hadBits = false;
   const ss = v => v * v * (3 - 2 * v);
   function octoFrame(t){
     requestAnimationFrame(octoFrame);
+    if (document.hidden) return;
     const y = scrollY, max = Math.max(1, docH - vh), p = y / max;
     vel = vel * .88 + (y - prevY) * .12; prevY = y;
     if (techVis) mqWrap.style.setProperty('--sk', clamp(vel * .14, -9, 9).toFixed(2));
-    const w = octo.offsetWidth || 64, ps = w / 16, hgt = ps * 14;
+    const w = ow, ps = w / 16, hgt = ps * 14;
     let s = Math.abs(vel);
     const topY = 64, botY = vh - hgt - (small() ? 96 : 120);
     oy += (topY + p * Math.max(0, botY - topY) - oy) * .07;
@@ -386,7 +519,7 @@
   }
 
   /* ---------- Início ---------- */
-  function boot(){ measure(); dockMetrics(); update(); }
+  function boot(){ measure(); dockMetrics(); sizeOcto(); update(); }
   boot();
   addEventListener('scroll', onScroll, {passive:true});
   let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(boot, 120); });
