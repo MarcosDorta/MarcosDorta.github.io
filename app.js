@@ -93,8 +93,9 @@
     keyRows.forEach((r, ri) => { let col = 0; r.forEach((sp, k) => { key(.7 + col * (colW + gp), .7 + ri * (rowH + gp), sp * colW + (sp - 1) * gp, rowH, keyTxt[ri][k]); col += sp; }); });
     for (let r = 0; r < 5; r++) for (let q = 0; q < 4; q++) key(43 + q * (nW + gp), .7 + r * (rowH + gp), nW, rowH, numTxt[r * 4 + q]);
   }
-  const kbc = $('#kbc'); drawKeyboard(kbc);
-  if (document.fonts && document.fonts.load) document.fonts.load('700 12px Quicksand').then(() => drawKeyboard(kbc)).catch(() => {});
+  const kbc = $('#kbc');
+  const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
+  idle(() => { if (document.fonts && document.fonts.load) document.fonts.load('700 12px Quicksand').then(() => drawKeyboard(kbc)).catch(() => drawKeyboard(kbc)); else drawKeyboard(kbc); });
 
   const card = `<div class="cardm"><i class="im"></i><i class="p"></i><i class="p" style="width:60%"></i></div>`;
   const prod = `<div class="cardm"><i class="im"></i><i class="p" style="width:70%"></i><i class="pr"></i></div>`;
@@ -302,7 +303,7 @@
         lastIdx = idx;
         steps.forEach((st, k) => { st.classList.toggle('act', k === idx); st.classList.toggle('done', k < idx); });
         caps.forEach((cp, k) => cp.classList.toggle('act', k === idx));
-        big.textContent = '0' + (idx + 1);
+        big.dataset.n = '0' + (idx + 1);
         big.classList.remove('flip'); void big.offsetWidth; big.classList.add('flip');
       }
     }
