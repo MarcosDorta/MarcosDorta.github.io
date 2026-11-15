@@ -76,6 +76,15 @@
   };
   const pagesEl = $('#pages'), lap = $('#lap'), urlEl = $('#url'), lcap = $('#lcap'), lprice = $('#lprice');
   const cards = $$('.pc');
+  if (!reduce && 'IntersectionObserver' in window){
+    const brl = n => 'R$ ' + n.toLocaleString('pt-BR');
+    const cio = new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return; cio.unobserve(e.target);
+      const node = $('.price', e.target).firstChild, target = parseInt(e.target.dataset.price.replace(/\D/g, ''), 10), t0 = performance.now();
+      (function step(now){ const k = clamp((now - t0) / 900); node.nodeValue = brl(Math.round(target * (1 - Math.pow(1 - k, 3)))); if (k < 1) requestAnimationFrame(step); })(t0);
+    }), {threshold:.6});
+    cards.forEach(c => cio.observe(c));
+  }
   const pgs = cards.map(c => { const p = el('div', 'pg'); p.innerHTML = MOCK[c.dataset.v]; pagesEl.append(p); return p; });   // conteúdo fixo do próprio código
   const YAW = [-14, 12, -10, 14, -12];
   let curCard = -1;
@@ -123,15 +132,23 @@
 
   /* ---------- Revelar ao entrar na tela ---------- */
   if (!reduce && 'IntersectionObserver' in window){
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('v'); io.unobserve(e.target); } }), {rootMargin:'0px 0px -8% 0px', threshold:.1});
-    $$('.rv').forEach((n, i) => { n.style.transitionDelay = ((i % 3) * 70) + 'ms'; io.observe(n); });
+    // Também revela o que ficou acima da tela (quem pulou pelo dock não encontra título escondido ao voltar)
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting || e.boundingClientRect.bottom < 0){ (e.target._t || e.target).classList.add('v'); io.unobserve(e.target); } }), {rootMargin:'0px 0px -8% 0px', threshold:.1});
+    $$('.rv').forEach((n, i) => {
+      n.style.transitionDelay = ((i % 3) * 70) + 'ms';
+      if (n.matches('h2')){                                  // títulos recortados por clip-path: observa um marcador de 1px acima deles
+        const sen = document.createElement('i'); sen.style.cssText = 'display:block;height:1px;margin-bottom:-1px;pointer-events:none'; sen._t = n;
+        n.before(sen); io.observe(sen);
+      } else io.observe(n);
+    });
     const io2 = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add('v'); io2.unobserve(e.target); } }), {threshold:.4});
     io2.observe(code);
   } else { code.classList.add('v'); $$('.rv').forEach(n => n.classList.add('v')); }
 
   /* ---------- Scroll ---------- */
   const steps = $$('.st', $('#steps')), segs = $$('.sg i', $('#steps')), caps = $$('.cap'), big = $('#big');
-  let lastIdx = -1, lastSec = -1, lastPct = -1, ticking = false;
+  let lastIdx = -1, lastSec = -1, lastPct = -1, ticking = false, techVis = false;
+  const mqWrap = $('.mqs');
   const tiltVis = new Set();
   const tio = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? tiltVis.add(e.target) : tiltVis.delete(e.target)), {rootMargin:'100px'}) : null;
   tilts.forEach(t => tio && tio.observe(t));
@@ -159,7 +176,8 @@
 
     tiltVis.forEach(t => { const r = t.getBoundingClientRect(); t.style.setProperty('--ty', (((r.top + r.height / 2) - vh / 2) / vh * -7).toFixed(2)); });
 
-    if (y + vh > M.tech.t && y < M.tech.t + M.tech.h){
+    techVis = y + vh > M.tech.t && y < M.tech.t + M.tech.h;
+    if (techVis){
       M.mq.forEach(m => {
         const dir = +m.r.dataset.mq, off = ((y - M.tech.t) * .5) % m.w;
         m.r.style.setProperty('--mx', (dir < 0 ? -off : off - m.w).toFixed(1));
@@ -174,6 +192,7 @@
       steps.forEach((s, k) => { s.classList.toggle('act', k === idx); s.classList.toggle('done', k < idx); });
       caps.forEach((c, k) => c.classList.toggle('act', k === idx));
       big.textContent = '0' + (idx + 1);
+      big.classList.remove('flip'); void big.offsetWidth; big.classList.add('flip');
     }
 
     const lim = y + vh * .5; let cur = 0;
@@ -188,7 +207,7 @@
 
   /* ---------- Dock com ampliação (mola) ---------- */
   const dock = $('#dock'), dockBg = $('#dockbg'), dSlots = $$('.slot', dock);
-  let base = 42, maxS = 1.4, dist = 96, gap = 8, lc = [], px = Infinity, W = 0, dockRun = false, hotI = -1;
+  let base = 42, maxS = 1.4, dist = 96, gap = 8, lc = [], px = Infinity, W = 0, dockRun = false, hotI = -1, waving = false, userDock = false;
   const sc = dSlots.map(() => 1), vs = dSlots.map(() => 0);
   function dockMetrics(){
     const s = small();
@@ -221,7 +240,7 @@
       acc += grow;
     });
     dockBg.style.setProperty('--sx', ((W + extra) / W).toFixed(4));
-    const hot = isFinite(px) && bd < dist * .55 ? best : -1;
+    const hot = isFinite(px) && !waving && bd < dist * .55 ? best : -1;
     if (hot !== hotI){ hotI = hot; dSlots.forEach((sl, i) => sl.classList.toggle('hot', i === hot)); }
     if (moving || isFinite(px)) requestAnimationFrame(dockStep); else dockRun = false;
   }
@@ -234,8 +253,23 @@
     dock.addEventListener('focusout', () => { px = Infinity; dockGo(); });
   }
 
+  if (!reduce){
+    ['pointerenter', 'pointerdown'].forEach(ev => dock.addEventListener(ev, () => { userDock = true; }));
+    ['pointerleave', 'pointercancel', 'pointerup'].forEach(ev => dock.addEventListener(ev, () => { userDock = false; }));
+    setInterval(() => {                                                // uma onda passa pelo dock de tempos em tempos
+      if (waving || userDock || document.hidden || !lc.length) return;
+      waving = true; const t0 = performance.now(), a = lc[0] - 70, b = lc[lc.length - 1] + 70;
+      (function step(now){
+        const k = clamp((now - t0) / 1300);
+        if (userDock){ waving = false; return; }
+        px = a + (b - a) * k; dockGo();
+        if (k < 1) requestAnimationFrame(step); else { px = Infinity; dockGo(); waving = false; }
+      })(t0);
+    }, 7000);
+  }
+
   /* ---------- Polvo em pixel art (clicável: dá uma volta na tela deixando um rastro binário) ---------- */
-  const COL = {X:'#7C5FDD', H:'#A992F0', E:'#0b0b12', M:'#0b0b12', B:'#C0DD5F'};
+  const COL = {X:'#7A4DFF', H:'#A98BFF', E:'#050505', M:'#050505', B:'#C6F432'};
   const HEAD = ['....XXXXXXXX....', '..XXHHXXXXXXXX..', '.XXXXXXXXXXXXXX.', '.XXXXXXXXXXXXXX.', 'XXXXEEXXXXEEXXXX', 'XXXXEEXXXXEEXXXX', 'XXBXXXXXXXXXXBXX', '.XXXXXXMMXXXXXX.', '.XXXXXXXXXXXXXX.', '..XXXXXXXXXXXX..'];
   const TA = ['.XX..XX..XX..XX.', '.XX..XX..XX..XX.', 'XX..XX..XX..XX..', 'XX..XX..XX..XX..'];
   const TB = ['.XX..XX..XX..XX.', '.XX..XX..XX..XX.', '..XX..XX..XX..XX', '..XX..XX..XX..XX'];
@@ -279,7 +313,7 @@
     }
     cctx.globalAlpha = 1;
   }
-  const spawn = (x, y, now) => bits.push({x: x - 4, y: y - 7, v: Math.random() < .5 ? 0 : 1, s: small() ? 2.5 : 3, t: now, life: 900 + Math.random() * 500, c: Math.random() < .2 ? '#ffffff' : '#C0DD5F'});
+  const spawn = (x, y, now) => bits.push({x: x - 4, y: y - 7, v: Math.random() < .5 ? 0 : 1, s: small() ? 2.5 : 3, t: now, life: 900 + Math.random() * 500, c: Math.random() < .2 ? '#F5F2EA' : '#C6F432'});
 
   let oy = 90, prevY = scrollY, vel = 0, bubT = 0, bubI = 0, swapT = 0, frameB = false, lastTx = 0, run = null, hadBits = false;
   const ss = v => v * v * (3 - 2 * v);
@@ -287,6 +321,7 @@
     requestAnimationFrame(octoFrame);
     const y = scrollY, max = Math.max(1, docH - vh), p = y / max;
     vel = vel * .88 + (y - prevY) * .12; prevY = y;
+    if (techVis) mqWrap.style.setProperty('--sk', clamp(vel * .14, -9, 9).toFixed(2));
     const w = octo.offsetWidth || 64, ps = w / 16, hgt = ps * 14;
     let s = Math.abs(vel);
     const topY = 64, botY = vh - hgt - (small() ? 96 : 120);
@@ -339,6 +374,16 @@
   $$('[data-glow]').forEach(c => {
     c.addEventListener('pointermove', e => { const r = c.getBoundingClientRect(); c.style.setProperty('--mx', (e.clientX - r.left) + 'px'); c.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
   });
+
+  if (!reduce && matchMedia('(pointer:fine)').matches){
+    const hp = $('.hero-pin');
+    heroEl.addEventListener('pointermove', e => { const r = hp.getBoundingClientRect(); hp.style.setProperty('--cx', (e.clientX - r.left) + 'px'); hp.style.setProperty('--cy', (e.clientY - r.top) + 'px'); hp.classList.add('lit'); });
+    heroEl.addEventListener('pointerleave', () => hp.classList.remove('lit'));
+    $$('.btn.pri, .btn.lime').forEach(b => {
+      b.addEventListener('pointermove', e => { const r = b.getBoundingClientRect(); b.style.transform = 'translate(' + (((e.clientX - r.left) / r.width - .5) * 10).toFixed(1) + 'px,' + (((e.clientY - r.top) / r.height - .5) * 8).toFixed(1) + 'px)'; });
+      b.addEventListener('pointerleave', () => { b.style.transform = ''; });
+    });
+  }
 
   /* ---------- Início ---------- */
   function boot(){ measure(); dockMetrics(); update(); }
